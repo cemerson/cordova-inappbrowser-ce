@@ -7,8 +7,8 @@ If you are not using the Cordova Command-line Interface, follow [Using Plugman t
 ###Notes:
 - Main reason I updated this plugin is to maintain the ability to specify Width/Height and Xposition/YPosition of my web views. I had it working in the Cordova 2.x world - but this updated version blew that all up so I had to go in and hack things up to get it working again. I am not an ace ObjC programmer by any stretch - so please share whatever adjustments, clean-up or polish suggestions if anyone has any!
 - New parameters available with this version of InAppBrowser are as follows (example usage below:
-    - [vw,vh,vx,vy] (width, height, xpos, ypos). .
-    - [buttoncolorbg] (I got sick of that default blue button so now you can specifyc a html hex color for the button background. Maybe one day I'll add similar stuff for the other UI elements [toolbar, label colors etc]).
+    - **vw,vh,vx,vy** (width, height, xpos, ypos). .
+    - **buttoncolorbg** (I got sick of that default blue button so now you can specifyc a html hex color for the button background. Maybe one day I'll add similar stuff for the other UI elements [toolbar, label colors etc]).
 - For some reason CoreGraphics framework isn't being auto added to project (even thought its specified in the plugin.xml so it has to be manually added when using this plugin otherwise you'll get a build error.
 
 ###Install Plugin

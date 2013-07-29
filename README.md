@@ -4,8 +4,9 @@ To install this plugin, follow the [Command-line Interface Guide](http://cordova
 
 If you are not using the Cordova Command-line Interface, follow [Using Plugman to Manage Plugins](http://cordova.apache.org/docs/en/edge/guide_plugin_ref_plugman.md.html).
 
-###Note:
-For some reason CoreGraphics framework isn't being auto added to project (even thought its specified in the plugin.xml so it has to be manually added when using this plugin otherwise you'll get a build error.
+###Notes:
+- Main reason I updated this plugin is to maintain the ability to specify Width/Height and Xposition/YPosition of my web views. I had it working in the Cordova 2.x world - but this updated version blew that all up so I had to go in and hack things up to get it working again. I am not an ace ObjC programmer by any stretch - so please share whatever adjustments, clean-up or polish suggestions if anyone has any!
+- For some reason CoreGraphics framework isn't being auto added to project (even thought its specified in the plugin.xml so it has to be manually added when using this plugin otherwise you'll get a build error.
 
 ###Install Plugin
 cordova plugins add https://github.com/cemerson/cordova-inappbrowser-ce.git

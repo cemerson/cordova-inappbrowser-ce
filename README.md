@@ -12,3 +12,13 @@ cordova plugins add https://github.com/cemerson/cordova-inappbrowser-ce.git
 
 ###Remove Plugin
 cordova plugins rm org.apache.cordova.core.inappbrowser-ce
+
+###Usage Examples:
+####window.open() no options:
+    window.open('http://www.ign.com','_blank');
+
+####window.open() with fancy options!:
+    window.open('http://www.ign.com','_blank','vw=568,vh=1004,vx=200,vy=0,buttoncolorbg=#BA8C3C');
+
+####window.open() with PDFs
+    (nothing special to note here - same options from above apply)

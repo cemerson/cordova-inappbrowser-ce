@@ -1,4 +1,4 @@
-cordova.define("org.apache.cordova.core.inappbrowser.InAppBrowser", function(require, exports, module) {/*
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -91,5 +91,3 @@ module.exports = function(strUrl, strWindowName, strWindowFeatures) {
     exec(cb, cb, "InAppBrowser", "open", [strUrl, strWindowName, strWindowFeatures]);
     return iab;
 };
-
-});

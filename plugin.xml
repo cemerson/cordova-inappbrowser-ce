@@ -5,14 +5,14 @@
       version="0.1.1">
     <name>InAppBrowserCE</name>
 
-    <js-module src="www/InAppBrowser.js" name="InAppBrowser">
+    <js-module src="www/InAppBrowser.js" name="InAppBrowserCE">
         <clobbers target="window.open" />
     </js-module>
     
     <!-- android -->
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
-            <feature name="InAppBrowser"> 
+            <feature name="InAppBrowserCE"> 
                 <param name="android-package" value="org.apache.cordova.core.InAppBrowser"/>
             </feature>
         </config-file>
@@ -23,7 +23,7 @@
     <!-- ios -->
     <platform name="ios">    
         <config-file target="config.xml" parent="/*">
-            <feature name="InAppBrowser">
+            <feature name="InAppBrowserCE">
                 <param name="ios-package" value="CDVInAppBrowser" /> 
             </feature>
         </config-file>
@@ -37,7 +37,7 @@
     <!-- wp7 -->
     <platform name="wp7">
         <config-file target="config.xml" parent="/*">
-            <feature name="InAppBrowser">
+            <feature name="InAppBrowserCE">
                 <param name="wp-package" value="InAppBrowser"/>
             </feature>
         </config-file>
@@ -48,7 +48,7 @@
     <!-- wp8 -->
     <platform name="wp8">
         <config-file target="config.xml" parent="/*">
-            <feature name="InAppBrowser">
+            <feature name="InAppBrowserCE">
                 <param name="wp-package" value="InAppBrowser"/>
             </feature>
         </config-file>

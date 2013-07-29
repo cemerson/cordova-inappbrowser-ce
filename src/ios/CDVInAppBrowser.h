@@ -62,7 +62,9 @@
 - (void)navigateTo:(NSURL*)url;
 - (void)showLocationBar:(BOOL)show;
 - (void)showToolBar:(BOOL)show;
-- (void)setCloseButtonTitle:(NSString*)title;
+
+/* cemerson */ // added buttonBGColor parameter
+- (void)setCloseButtonTitle:(NSString*)title buttonBGColor:(UIColor*)buttonBGColor;
 
 - (id)initWithUserAgent:(NSString*)userAgent prevUserAgent:(NSString*)prevUserAgent;
 
@@ -83,6 +85,12 @@
 @property (nonatomic, assign) BOOL keyboarddisplayrequiresuseraction;
 @property (nonatomic, assign) BOOL suppressesincrementalrendering;
 @property (nonatomic, assign) BOOL hidden;
+
+/* cemerson */ @property (nonatomic, assign) CGFloat vw;
+/* cemerson */ @property (nonatomic, assign) CGFloat vh;
+/* cemerson */ @property (nonatomic, assign) CGFloat vx;
+/* cemerson */ @property (nonatomic, assign) CGFloat vy;
+/* cemerson */ @property (nonatomic, assign) NSString* buttoncolorbg;
 
 + (CDVInAppBrowserOptions*)parseOptions:(NSString*)options;
 

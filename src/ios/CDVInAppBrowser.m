@@ -29,8 +29,14 @@
 #define    TOOLBAR_HEIGHT 44.0
 #define    LOCATIONBAR_HEIGHT 21.0
 #define    FOOTER_HEIGHT ((TOOLBAR_HEIGHT) + (LOCATIONBAR_HEIGHT))
+#define    BUTTON_BACKGROUND_COLOR @"#448EE3"
+#define    CLOSE_BUTTON_LABEL @"Done"
 
 #pragma mark CDVInAppBrowser
+
+CDVInAppBrowserViewController *vc;
+CDVInAppBrowserViewController *iabvc;
+
 
 @implementation CDVInAppBrowser
 
@@ -61,11 +67,11 @@
 
 - (BOOL) isSystemUrl:(NSURL*)url
 {
-	if ([[url host] isEqualToString:@"itunes.apple.com"]) {
-		return YES;
-	}
-	
-	return NO;
+    if ([[url host] isEqualToString:@"itunes.apple.com"]) {
+        return YES;
+    }
+    
+    return NO;
 }
 
 - (void)open:(CDVInvokedUrlCommand*)command
@@ -75,6 +81,8 @@
     NSString* url = [command argumentAtIndex:0];
     NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
     NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
+
+    NSLog(@"setting VIEW Dimensions now...");
 
     self.callbackId = command.callbackId;
 
@@ -114,14 +122,27 @@
             self.inAppBrowserViewController.orientationDelegate = (UIViewController <CDVScreenOrientationDelegate>*)self.viewController;
         }
     }
-
+    
+    /* cemerson */ // set pointer to this viewcontroller for later use
+    /* cemerson */iabvc = self.inAppBrowserViewController;
 
     CDVInAppBrowserOptions* browserOptions = [CDVInAppBrowserOptions parseOptions:options];
     [self.inAppBrowserViewController showLocationBar:browserOptions.location];
     [self.inAppBrowserViewController showToolBar:browserOptions.toolbar];
+
+    /* cemerson */ // abstract this out into a standalone method?
+    NSString *stringColor = browserOptions.buttoncolorbg;
+    NSUInteger red, green, blue;
+    sscanf([stringColor UTF8String], "#%02X%02X%02X", &red, &green, &blue);    
+    UIColor *buttonbg = [UIColor colorWithRed:red/255.0 green:green/255.0 blue:blue/255.0 alpha:1];    
+    
+    /* cemerson */ // for now calling setCloseButtonTitle() either way to make sure button gets colored
     if (browserOptions.closebuttoncaption != nil) {
-        [self.inAppBrowserViewController setCloseButtonTitle:browserOptions.closebuttoncaption];
+        [self.inAppBrowserViewController setCloseButtonTitle:browserOptions.closebuttoncaption buttonBGColor:buttonbg];
+    }else{
+        [self.inAppBrowserViewController setCloseButtonTitle:@"Done" buttonBGColor:buttonbg];         
     }
+    
     // Set Presentation Style
     UIModalPresentationStyle presentationStyle = UIModalPresentationFullScreen; // default
     if (browserOptions.presentationstyle != nil) {
@@ -143,7 +164,6 @@
         }
     }
     self.inAppBrowserViewController.modalTransitionStyle = transitionStyle;
-
   
     // UIWebView options
     self.inAppBrowserViewController.webView.scalesPageToFit = browserOptions.enableviewportscale;
@@ -153,27 +173,57 @@
         self.inAppBrowserViewController.webView.keyboardDisplayRequiresUserAction = browserOptions.keyboarddisplayrequiresuseraction;
         self.inAppBrowserViewController.webView.suppressesIncrementalRendering = browserOptions.suppressesincrementalrendering;
     }
-    //cemerson
-    self.inAppBrowserViewController.view.backgroundColor = [UIColor clearColor];
-    self.inAppBrowserViewController.webView.backgroundColor = [UIColor clearColor];
-    self.inAppBrowserViewController.view.opaque = NO;
-    self.inAppBrowserViewController.webView.opaque = NO;
-    self.viewController.modalViewController.view.backgroundColor = [UIColor clearColor];
-    self.viewController.modalViewController.view.opaque = NO;
   
     if (! browserOptions.hidden) {
       if (self.viewController.modalViewController != self.inAppBrowserViewController) {
-        [self.viewController presentModalViewController:self.inAppBrowserViewController animated:YES];
+        /*cemerson*/ // OLD presentModalViewController APPROACH
+        /*cemerson*/ // [self.viewController presentModalViewController:self.inAppBrowserViewController animated:YES];
+
+        /*cemerson*/ // NEW addSubView APPROACH
+        /*cemerson*/ vc = (CDVInAppBrowserViewController*)[ super viewController ];
+        CGRect vcBoundsInit = CGRectMake(browserOptions.vx,
+                                browserOptions.vh,
+                                browserOptions.vw,
+                                browserOptions.vh);
+        /*cemerson*/ CGRect vcBounds = CGRectMake(browserOptions.vx,
+                                            browserOptions.vy,
+                                            browserOptions.vw,
+                                            browserOptions.vh);
+        /*cemerson*/ iabvc.view.frame = vcBoundsInit;
+        /*cemerson*/ iabvc.webView.scalesPageToFit = YES;
+        /*cemerson*/ [iabvc viewWillAppear:NO];
+    
+         /*cemerson*/ [vc.self.view addSubview:iabvc.view];
+          
+          [UIView beginAnimations:nil context:nil];
+          [UIView setAnimationDuration:0.25];
+          [UIView setAnimationCurve:UIViewAnimationCurveEaseIn];
+          
+          iabvc.view.frame = vcBounds;
+        
+          [UIView commitAnimations];
+
       }
     }
     [self.inAppBrowserViewController navigateTo:url];
+}
+
+//- (BOOL)webView:(UIWebView*)theWebView should
+- (UIColor*)getUIColorFromHTMLHexColorString: (NSString*)htmlColorString{
+    NSString *stringColor = htmlColorString;
+    NSUInteger red, green, blue;
+    sscanf([stringColor UTF8String], "#%02X%02X%02X", &red, &green, &blue);
+    
+    UIColor *buttonbg = [UIColor colorWithRed:red/255.0 green:green/255.0 blue:blue/255.0 alpha:1];
+    
+    return buttonbg;
+
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command
 {
     if ([self.inAppBrowserViewController isViewLoaded] && self.inAppBrowserViewController.view.window)
         return;
-        
     [self.viewController presentModalViewController:self.inAppBrowserViewController animated:YES];
 }
 
@@ -336,8 +386,16 @@
 - (void)webViewDidFinishLoad:(UIWebView*)theWebView
 {
     if (self.callbackId != nil) {
+        
+        /* cemerson */ // if you CLOSE the web view before it finishes loading sometimes it throws and error
+        if(self.inAppBrowserViewController.currentURL.absoluteString == nil){
+                NSLog(@" webViewDidFinishLoad() WARNING: *absoluteString is nil! Did you close the web view before it finished loading?");
+            return;
+        }
+        
         // TODO: It would be more useful to return the URL the page is actually on (e.g. if it's been redirected).
         NSString* url = [self.inAppBrowserViewController.currentURL absoluteString];
+        
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                                       messageAsDictionary:@{@"type":@"loadstop", @"url":url}];
         [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
@@ -361,11 +419,15 @@
 - (void)browserExit
 {
     if (self.callbackId != nil) {
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+        
+        
+         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                                       messageAsDictionary:@{@"type":@"exit"}];
         [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
 
         [self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
+         
+        
     }
     // Don't recycle the ViewController since it may be consuming a lot of memory.
     // Also - this is required for the PDF/User-Agent bug work-around.
@@ -393,54 +455,35 @@
     return self;
 }
 
-
-
 - (void)createViews
 {
     // We create the views in code for primarily for ease of upgrades and not requiring an external .xib to be included
 
-    //CGRect webViewBounds = self.view.bounds;
+    /*cemerson*/ // inherit frame of parent view
+    CGRect webViewBounds = CGRectMake(0,
+                                      0,
+                                      self.view.frame.size.width,
+                                      self.view.frame.size.height);
     
-    // cemerson 1 ==================
-    NSString *viewWidthValue = @"234"; //1024";
-    NSString *viewHeightValue = @"433"; //768";
-    NSString *viewXPosValue = @"100";
-    NSString *viewYPosValue = @"0";
-    // bool *UIWindowParametersProvided = NO;
-    // ==========================
-    
-    // if(UIWindowParametersProvided){
-    CGRect webViewBounds = CGRectMake([viewXPosValue integerValue],
-                                    [viewYPosValue integerValue],
-                                    [viewWidthValue integerValue],
-                                    [viewHeightValue integerValue]);
-    
-        // ===========
-
-
-
     webViewBounds.size.height -= FOOTER_HEIGHT;
 
-    self.webView = [[UIWebView alloc] initWithFrame:webViewBounds];
-    //inAppBrowserViewController = [[ CDVInAppBrowserViewController alloc ] initWithScale:FALSE ];
-    self.view.frame = webViewBounds;
+    self.webView.scalesPageToFit = YES;
     
-    //self.webView.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
+    self.webView = [[UIWebView alloc] initWithFrame:webViewBounds];
 
     [self.view addSubview:self.webView];
     [self.view sendSubviewToBack:self.webView];
 
     self.webView.delegate = _webViewDelegate;
-    // self.webView.backgroundColor = [UIColor whiteColor];
-    //* cemerson */ self.webView.backgroundColor = [UIColor clearColor];
-    //* cemerson */ self.view.backgroundColor = [UIColor clearColor];
+    self.webView.backgroundColor = [UIColor clearColor];
 
-    self.webView.clearsContextBeforeDrawing = NO; //YES;
+    self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
     self.webView.contentMode = UIViewContentModeScaleToFill;
     self.webView.contentStretch = CGRectFromString(@"{{0, 0}, {1, 1}}");
     self.webView.multipleTouchEnabled = YES;
-    self.webView.opaque = NO;
+    /* cemerson */ // set webView to transparent so the transition animation is actually covering up the app 
+    /* cemerson */ self.webView.opaque = NO;
     self.webView.scalesPageToFit = NO;
     self.webView.userInteractionEnabled = YES;
 
@@ -519,51 +562,26 @@
 
     [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
 
-    
-    
-    
-    self.view.backgroundColor = [UIColor clearColor]; //[UIColor grayColor];
-    //[self.webView setBackgroundColor:[UIColor redColor]];
-    [self.webView setOpaque:NO];
-    [self.view setBackgroundColor:[UIColor clearColor]];
-    [self.view setOpaque:NO];
-    
-    //CDVInAppBrowserViewController* inAppBrowserViewController;
-
-    // CDVInAppBrowserViewController* cont = (CDVInAppBrowserViewController*)[ super viewController ];
-    //id cont = [self.view.superview	nextResponder];
-    //cont.view.backgroundColor = [UIColor clearColor]; // cemerson
-   // cont.modalPresentationStyle = UIModalPresentationCurrentContext; // cemerson
-
-    //self.parentViewController.view.backgroundColor = [UIColor clearColor];
-    //self.parentViewController.modalPresentationStyle = UIModalPresentationCurrentContext;
+    /* cemerson */ self.view.backgroundColor = [UIColor grayColor];
+    /* cemerson */ self.view.opaque = YES;
     
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
-    
-    
-    //[self dismissModalViewControllerAnimated:NO];
-   // self.modalPresentationStyle = UIModalPresentationCurrentContext; // cemerson
-   // self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-
-    //[self presentModalViewController:self animated:YES];
-
-    
-
-    
 }
 
-
-- (void)setCloseButtonTitle:(NSString*)title
+/* cemerson */ // added buttonBGColor parameter
+- (void)setCloseButtonTitle:(NSString*)title buttonBGColor:(UIColor*)buttonBGColor
 {
+    //NSLog(@"setCloseButtonTitle() color:%@", buttonBGColor);
     // the advantage of using UIBarButtonSystemItemDone is the system will localize it for you automatically
     // but, if you want to set this yourself, knock yourself out (we can't set the title for a system Done button, so we have to create a new one)
     self.closeButton = nil;
     self.closeButton = [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)];
     self.closeButton.enabled = YES;
-    self.closeButton.tintColor = [UIColor colorWithRed:60.0 / 255.0 green:136.0 / 255.0 blue:230.0 / 255.0 alpha:1];
-
+       
+    self.closeButton.tintColor = buttonBGColor;
+    
     NSMutableArray* items = [self.toolbar.items mutableCopy];
     [items replaceObjectAtIndex:0 withObject:self.closeButton];
     [self.toolbar setItems:items];
@@ -699,18 +717,26 @@
 - (void)close
 {
     [CDVUserAgentUtil releaseLock:&_userAgentLockToken];
-
-    if ([self respondsToSelector:@selector(presentingViewController)]) {
+    
+    /* cemerson */ // TODO: prevent throwing error when closing before web page finished loading (??)
+    
+    /* cemerson */ // these conditions of the close9) method no longer necessary since we now use addSubView
+    /* cemerson
+   if ([self respondsToSelector:@selector(presentingViewController)]) {
         [[self presentingViewController] dismissViewControllerAnimated:YES completion:nil];
     } else {
         [[self parentViewController] dismissModalViewControllerAnimated:YES];
-    }
-
+    }*/
+    
     self.currentURL = nil;
+    
 
     if ((self.navigationDelegate != nil) && [self.navigationDelegate respondsToSelector:@selector(browserExit)]) {
         [self.navigationDelegate browserExit];
     }
+    
+    /* cemerson */ [iabvc.view removeFromSuperview];
+    
 }
 
 - (void)navigateTo:(NSURL*)url
@@ -790,7 +816,6 @@
     }
 
     [self.navigationDelegate webViewDidFinishLoad:theWebView];
-    
 }
 
 - (void)webView:(UIWebView*)theWebView didFailLoadWithError:(NSError*)error
@@ -843,16 +868,23 @@
 {
     if (self = [super init]) {
         // default values
+            
         self.location = YES;
         self.toolbar = YES;
-        self.closebuttoncaption = nil;
-
         self.enableviewportscale = NO;
         self.mediaplaybackrequiresuseraction = NO;
         self.allowinlinemediaplayback = NO;
         self.keyboarddisplayrequiresuseraction = YES;
         self.suppressesincrementalrendering = NO;
         self.hidden = NO;
+        
+        /* cemerson */ self.closebuttoncaption = CLOSE_BUTTON_LABEL;
+        /* cemerson */ self.vw = iabvc.view.frame.size.width;
+        /* cemerson */ self.vh = iabvc.view.frame.size.height; // - (FOOTER_HEIGHT);
+        /* cemerson */ self.vx = iabvc.view.frame.origin.x;
+        /* cemerson */ self.vy = 0;
+        /* cemerson */ self.buttoncolorbg = BUTTON_BACKGROUND_COLOR;
+        
     }
 
     return self;
@@ -881,11 +913,12 @@
 
             // set the property according to the key name
             if ([obj respondsToSelector:NSSelectorFromString(key)]) {
+                NSLog(@"....parsing browserOption[%@] ...", key);
                 if (isNumber) {
                     [obj setValue:[numberFormatter numberFromString:value_lc] forKey:key];
                 } else if (isBoolean) {
                     [obj setValue:[NSNumber numberWithBool:[value_lc isEqualToString:@"yes"]] forKey:key];
-                } else {
+                } else { // string
                     [obj setValue:value forKey:key];
                 }
             }

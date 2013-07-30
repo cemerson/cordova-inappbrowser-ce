@@ -37,7 +37,7 @@
 CDVInAppBrowserViewController *vc;
 CDVInAppBrowserViewController *iabvc;
 
-BOOL MODAL_MODE_SPECIFIED = NO;
+BOOL WINDOWED_MODE_SPECIFIED = NO;
 
 @implementation CDVInAppBrowser
 
@@ -83,13 +83,18 @@ BOOL MODAL_MODE_SPECIFIED = NO;
     NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
     NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
     
-    if ([options rangeOfString:@"formsheet"].location == NSNotFound) {
-        MODAL_MODE_SPECIFIED = NO;
+    if (
+        ([options rangeOfString:@"vx"].location == NSNotFound) &&
+        ([options rangeOfString:@"vy"].location == NSNotFound) &&
+        ([options rangeOfString:@"vw"].location == NSNotFound) &&
+        ([options rangeOfString:@"vh"].location == NSNotFound)
+        ){
+        WINDOWED_MODE_SPECIFIED = NO;
     }else{
-        MODAL_MODE_SPECIFIED = YES;
+        WINDOWED_MODE_SPECIFIED = YES;
     }
     
-    NSLog(@"PLUGIN: InAppBrowser.open()...{MODAL_MODE_SPECIFIED:%i} [CDVInAppBrowser.m]", MODAL_MODE_SPECIFIED);
+    NSLog(@"PLUGIN: InAppBrowser.open()...{WINDOWED_MODE_SPECIFIED:%i} [CDVInAppBrowser.m]", WINDOWED_MODE_SPECIFIED);
     
     self.callbackId = command.callbackId;
     
@@ -186,7 +191,7 @@ BOOL MODAL_MODE_SPECIFIED = NO;
     if (! browserOptions.hidden) {
         if (self.viewController.modalViewController != self.inAppBrowserViewController) {
             
-            if(!MODAL_MODE_SPECIFIED){
+            if(WINDOWED_MODE_SPECIFIED){
                 //NSLog(@"PLUGIN: InAppBrowser: addSubView Mode");
                 
                 /*cemerson*/ // NEW addSubView APPROACH
@@ -753,7 +758,7 @@ BOOL MODAL_MODE_SPECIFIED = NO;
     }
     
     /* cemerson */ // if windowsModeSpecified we assume addSubView was used
-    if(!MODAL_MODE_SPECIFIED){
+    if(WINDOWED_MODE_SPECIFIED){
         [iabvc.view removeFromSuperview];
     }
     

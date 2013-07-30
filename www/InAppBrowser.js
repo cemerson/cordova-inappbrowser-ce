@@ -38,12 +38,10 @@ _eventHandler: function (event) {
         this.channels[event.type].fire(event);
     }
 },
-close: function (eventname) {    
-    window.console.log('PLUGIN: InAppBrowser.close() [InAppBrowser.js]');
+close: function (eventname) {        
     exec(null, null, "InAppBrowser", "close", []);
 },
-show: function (eventname) {
-    window.console.log('PLUGIN: InAppBrowser.show() [InAppBrowser.js]');
+show: function (eventname) {    
     exec(null, null, "InAppBrowser", "show", []);
 },
 addEventListener: function (eventname,f) {

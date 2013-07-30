@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<plugin xmlns="http://cordova.apache.org/ns/plugins/1.0"
-           id="org.apache.cordova.core.inappbrowser"
-      version="20130730.4">
+<plugin xmlns="http://cordova.apache.org/ns/plugins/1.0"           
+           id="org.apache.cordova.core.InAppBrowser"
+      version="20130730.5">
     <name>InAppBrowser</name>
 
     <js-module src="www/InAppBrowser.js" name="InAppBrowser">
@@ -21,7 +21,7 @@
     </platform>
     
     <!-- ios -->
-    <platform name="ios">    
+    <platform name="ios">            
         <config-file target="config.xml" parent="/*">
             <feature name="InAppBrowser">
                 <param name="ios-package" value="CDVInAppBrowser" /> 
@@ -29,9 +29,9 @@
         </config-file>
 
         <header-file src="src/ios/CDVInAppBrowser.h" />
-	    <source-file src="src/ios/CDVInAppBrowser.m" />
+	    <source-file src="src/ios/CDVInAppBrowser.m" framework="true" />
 	    
-	    <framework src="CoreGraphics.framework" />
+        <framework src="CoreGraphics.framework" />
     </platform>
 
     <!-- wp7 -->

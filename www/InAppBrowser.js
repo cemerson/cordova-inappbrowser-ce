@@ -38,8 +38,7 @@ _eventHandler: function (event) {
         this.channels[event.type].fire(event);
     }
 },
-close: function (eventname) {
-    removeWindowedModeClass();
+close: function (eventname) {    
     window.console.log('PLUGIN: InAppBrowser.close() [InAppBrowser.js]');
     exec(null, null, "InAppBrowser", "close", []);
 },

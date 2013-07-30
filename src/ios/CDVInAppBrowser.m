@@ -160,7 +160,7 @@ BOOL MODAL_MODE_SPECIFIED = NO;
             presentationStyle = UIModalPresentationFormSheet;
         }
     }
-    NSLog(@"PLUGIN: InAppBrowser.presentationStyle = %@",browserOptions.presentationstyle);
+    // NSLog(@"PLUGIN: InAppBrowser.presentationStyle = %@",browserOptions.presentationstyle);
     self.inAppBrowserViewController.modalPresentationStyle = presentationStyle;
     
     // Set Transition Style

@@ -200,6 +200,9 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
                                                  browserOptions.vh,
                                                  browserOptions.vw,
                                                  browserOptions.vh);
+                
+                /*cemerson*/ CGRect webViewBounds = CGRectMake(0,0, browserOptions.vw, browserOptions.vh);
+
                 /*cemerson*/ CGRect vcBounds = CGRectMake(browserOptions.vx,
                                                           browserOptions.vy,
                                                           browserOptions.vw,
@@ -207,14 +210,20 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
                 
                 /*cemerson*/ // if formsheet mode we dont mess with the frame
                 /*cemerson*/ iabvc.view.frame = vcBoundsInit;
+                /*cemerson*/ iabvc.webView.frame = webViewBounds;
+                
+                /*cemerson*/ [iabvc.view setAutoresizesSubviews:YES];
+                /*cemerson*/ [iabvc.webView setAutoresizingMask:UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth];
                 
                 /*cemerson*/ iabvc.webView.scalesPageToFit = YES;
+                
                 /*cemerson*/ [iabvc viewWillAppear:NO];
+                
                 /*cemerson*/ [vc.self.view addSubview:iabvc.view];
                 
                 /*cemerson*/ // view animation
                 [UIView beginAnimations:nil context:nil];
-                [UIView setAnimationDuration:0.25];
+                [UIView setAnimationDuration:0.30];
                 [UIView setAnimationCurve:UIViewAnimationCurveEaseIn];
                 
                 /*cemerson*/ iabvc.view.frame = vcBounds;
@@ -484,14 +493,17 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     // We create the views in code for primarily for ease of upgrades and not requiring an external .xib to be included
     
     /*cemerson*/ // inherit frame of parent view
-    CGRect webViewBounds = CGRectMake(0,
-                                      0,
-                                      self.view.frame.size.width,
-                                      self.view.frame.size.height);
+//    CGRect webViewBounds = CGRectMake(0,
+//                                      0,
+//                                      self.view.frame.size.width,
+//                                      self.view.frame.size.height);
+    
+    CGRect webViewBounds = self.view.bounds;
     
     webViewBounds.size.height -= FOOTER_HEIGHT;
     
     self.webView.scalesPageToFit = YES;
+    self.webView.contentMode = UIViewAutoresizingFlexibleWidth;
     
     self.webView = [[UIWebView alloc] initWithFrame:webViewBounds];
     

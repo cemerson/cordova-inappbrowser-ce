@@ -15,7 +15,7 @@ If you are not using the Cordova Command-line Interface, follow [Using Plugman t
 cordova plugins add https://github.com/cemerson/cordova-inappbrowser-ce.git
 
 ###Remove Plugin
-cordova plugins rm org.apache.cordova.core.inappbrowser-ce
+cordova plugins rm org.apache.cordova.plugins.inappbrowserce
 
 ###Usage Examples:
 ####window.open() no options:

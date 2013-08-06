@@ -2,8 +2,8 @@
 
 <plugin xmlns="http://cordova.apache.org/ns/plugins/1.0"           
            id="org.apache.cordova.plugins.inappbrowserce"
-      version="20130730.9">
-    <name>InAppBrowserCE</name>
+      version="20130806.1">
+    <name>InAppBrowser</name>
 
     <js-module src="www/InAppBrowser.js" name="InAppBrowser">
         <clobbers target="window.open" />
@@ -30,6 +30,10 @@
 
         <header-file src="src/ios/CDVInAppBrowser.h" />
 	    <source-file src="src/ios/CDVInAppBrowser.m" />
+        <resource-file src="src/ios/CDVInAppBrowser_fs.png"/> 
+        <resource-file src="src/ios/CDVInAppBrowser_fs@2X.png"/> 
+        <resource-file src="src/ios/CDVInAppBrowser_fs_exit.png"/> 
+        <resource-file src="src/ios/CDVInAppBrowser_fs_exit@2X.png"/> 
 	    
         <framework src="CoreGraphics.framework" weak="true" />
     </platform>

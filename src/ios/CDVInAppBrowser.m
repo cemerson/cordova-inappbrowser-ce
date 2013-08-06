@@ -30,23 +30,32 @@
 #define    LOCATIONBAR_HEIGHT 21.0
 #define    FOOTER_HEIGHT ((TOOLBAR_HEIGHT) + (LOCATIONBAR_HEIGHT))
 #define    BUTTON_BACKGROUND_COLOR @"#448EE3"
-#define    CLOSE_BUTTON_LABEL @"Done"
 
 #pragma mark CDVInAppBrowser
 
 CDVInAppBrowserViewController *vc;
 CDVInAppBrowserViewController *iabvc;
+CDVInAppBrowser *iab;
 
-BOOL WINDOWED_MODE_SPECIFIED = NO;
+BOOL WINDOWED_MODE_ENABLED;
+int VIEW_WIDTH;
+int VIEW_HEIGHT;
+int VIEW_XPOS;
+int VIEW_YPOS;
+BOOL IN_ROTATED_MODE;
+BOOL FULLSCREEN_WHEN_ROTATED;
+BOOL FULLSCREEN_BUTTON_ENABLED;
+BOOL IN_FULLSCREEN_MODE;
+BOOL HAS_ANIMATED;
+NSString *CLOSE_BUTTON_LABEL = @"Done";
 
 @implementation CDVInAppBrowser
 
 - (CDVInAppBrowser*)initWithWebView:(UIWebView*)theWebView
 {
     self = [super initWithWebView:theWebView];
-    if (self != nil) {
-        // your initialization here
-    }
+    
+    iab = self;
     
     return self;
 }
@@ -58,12 +67,29 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
 
 - (void)close:(CDVInvokedUrlCommand*)command
 {
+    NSLog(@"--> CDVInAppBrowser.close()");
+    
     if (self.inAppBrowserViewController != nil) {
         [self.inAppBrowserViewController close];
         self.inAppBrowserViewController = nil;
     }
     
     self.callbackId = nil;
+    
+    [self cleanUpViews];
+}
+
+- (void) cleanUpViews{
+    [iabvc.view.subviews makeObjectsPerformSelector: @selector(removeFromSuperview)];
+    
+    [iabvc.view removeFromSuperview];
+    
+    [iab.viewController removeFromParentViewController];
+    
+    NSLog(@"SUB VIEW LIST #3(FINAL):");
+    [self listSubviewsOfView:iabvc.view];
+    
+    [iabvc viewDidUnload];
 }
 
 - (BOOL) isSystemUrl:(NSURL*)url
@@ -77,51 +103,180 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
 
 - (void)open:(CDVInvokedUrlCommand*)command
 {
-    CDVPluginResult* pluginResult;
     
-    NSString* url = [command argumentAtIndex:0];
-    NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
-    NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+		dispatch_async(dispatch_get_main_queue(), ^(void) {
+            
+            
+            
+            CDVPluginResult* pluginResult;
+            
+            NSString* url = [command argumentAtIndex:0];
+            NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
+            NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
+            
+            
+            // Determine [WINDOWED_MODE_ENABLED] value
+            if (
+                ([options rangeOfString:@"vw"].location == NSNotFound) &&
+                ([options rangeOfString:@"vh"].location == NSNotFound) &&
+                ([options rangeOfString:@"vx"].location == NSNotFound) &&
+                ([options rangeOfString:@"vy"].location == NSNotFound)
+                ){
+                WINDOWED_MODE_ENABLED = NO; // no view x,y,w,h settings provided, assume MODAL method
+            }else{
+                WINDOWED_MODE_ENABLED = YES; // some view x,y,w,h settings provided, assume ADDSUBVIEW method
+            }
+            
+            NSLog(@"--> InAppBrowser.open()\n\tWINDOWED_MODE_ENABLED:%i", WINDOWED_MODE_ENABLED);
+            
+            self.callbackId = command.callbackId;
+            
+            if (url != nil) {
+                NSURL* baseUrl = [self.webView.request URL];
+                NSURL* absoluteUrl = [[NSURL URLWithString:url relativeToURL:baseUrl] absoluteURL];
+                
+                if ([self isSystemUrl:absoluteUrl]) {
+                    target = kInAppBrowserTargetSystem;
+                }
+                
+                if ([target isEqualToString:kInAppBrowserTargetSelf]) {
+                    [self openInCordovaWebView:absoluteUrl withOptions:options];
+                } else if ([target isEqualToString:kInAppBrowserTargetSystem]) {
+                    [self openInSystem:absoluteUrl];
+                } else { // _blank or anything else
+                    [self openInInAppBrowser:absoluteUrl withOptions:options];
+                }
+                
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+            } else {
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"incorrect number of arguments"];
+            }
+            
+            [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            
+            
+	    });
+	});
     
-    if (
-        ([options rangeOfString:@"vx"].location == NSNotFound) &&
-        ([options rangeOfString:@"vy"].location == NSNotFound) &&
-        ([options rangeOfString:@"vw"].location == NSNotFound) &&
-        ([options rangeOfString:@"vh"].location == NSNotFound)
-        ){
-        WINDOWED_MODE_SPECIFIED = NO;
-    }else{
-        WINDOWED_MODE_SPECIFIED = YES;
-    }
-    
-    NSLog(@"PLUGIN: InAppBrowser.open()...{WINDOWED_MODE_SPECIFIED:%i} [CDVInAppBrowser.m]", WINDOWED_MODE_SPECIFIED);
-    
-    self.callbackId = command.callbackId;
-    
-    if (url != nil) {
-        NSURL* baseUrl = [self.webView.request URL];
-        NSURL* absoluteUrl = [[NSURL URLWithString:url relativeToURL:baseUrl] absoluteURL];
-        
-        if ([self isSystemUrl:absoluteUrl]) {
-            target = kInAppBrowserTargetSystem;
-        }
-        
-        if ([target isEqualToString:kInAppBrowserTargetSelf]) {
-            [self openInCordovaWebView:absoluteUrl withOptions:options];
-        } else if ([target isEqualToString:kInAppBrowserTargetSystem]) {
-            [self openInSystem:absoluteUrl];
-        } else { // _blank or anything else
-            [self openInInAppBrowser:absoluteUrl withOptions:options];
-        }
-        
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-    } else {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"incorrect number of arguments"];
-    }
-    
-    [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
+
+
+-(CGRect)currentScreenBoundsDependOnOrientation
+{
+    
+    CGRect screenBounds = [UIScreen mainScreen].bounds ;
+    CGFloat width = CGRectGetWidth(screenBounds)  ;
+    CGFloat height = CGRectGetHeight(screenBounds) ;
+    UIInterfaceOrientation interfaceOrientation = [UIApplication sharedApplication].statusBarOrientation;
+    
+    if(UIInterfaceOrientationIsPortrait(interfaceOrientation)){
+        screenBounds.size = CGSizeMake(width, height);
+    }else if(UIInterfaceOrientationIsLandscape(interfaceOrientation)){
+        screenBounds.size = CGSizeMake(height, width);
+    }
+    return screenBounds ;
+}
+
+- (void) initOrRefreshViewSizeAndBounds{
+    
+    /*DEBUG*/ //NSLog(@"CDVInAppBrowser.initOrRefreshViewSizeAndBounds()...IN_ROTATED_MODE:%d | IN_FULLSCREEN_MODE:%d | WINDOWED_MODE_ENABLED:%d",IN_ROTATED_MODE, IN_FULLSCREEN_MODE, WINDOWED_MODE_ENABLED);
+    
+    int w = 0;
+    int h = 0;
+    int x = 0;
+    int y = 0;
+    int deviceW = [iab currentScreenBoundsDependOnOrientation].size.width;
+    int deviceH = [iab currentScreenBoundsDependOnOrientation].size.height;
+    
+    if(!WINDOWED_MODE_ENABLED){
+        /*DEBUG*/ //NSLog(@" ... fullscreen/modal mode");
+        
+        w = deviceW;
+        h = deviceH;
+        x = 0;
+        y = 0;
+        
+    }else{
+        
+        vc = (CDVInAppBrowserViewController*)[ super viewController ];
+        
+        /*DEBUG*/ //NSLog(@" ... windowed mode");
+        if((IN_ROTATED_MODE) || (IN_FULLSCREEN_MODE)){
+            /*DEBUG*/ //NSLog(@" ...... rotated or fullscreen-toggeled mode");
+            w = deviceW;
+            h = deviceH;
+            x = 0;
+            y = 0;
+        }else{
+            /*DEBUG*/ //NSLog(@" ...... default view mode");
+            w = VIEW_WIDTH;
+            h = VIEW_HEIGHT;
+            x = VIEW_XPOS;
+            y = VIEW_YPOS;
+        }
+    }
+    
+    
+    NSLog(@"--> CDVInAppBrowser.initOrRefreshViewSizeAndBounds()\n\tView Settings:\n\t\tWidth:%d\n\t\tHeight:%d\n\t\tXPosition:%d\n\t\tYPosition:%d",
+          w,h,x,y);
+    
+    CGRect vcBoundsInit = CGRectMake(x,
+                                     h+FOOTER_HEIGHT,
+                                     w,
+                                     h);
+    
+    CGRect webViewBounds = CGRectMake(0,
+                                      0,
+                                      w,
+                                      h-3 // -3 is to hide PDF from showing under toolbar sometimes
+                                      );
+    
+    CGRect vcBounds = CGRectMake(x,
+                                 y,
+                                 w,
+                                 h);
+    
+    iabvc.view.frame = vcBoundsInit;
+    
+    iabvc.webView.frame = webViewBounds;
+    
+    [iabvc.view setAutoresizesSubviews:YES];
+    [iabvc.webView setAutoresizingMask:UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth];
+    
+    
+    if(WINDOWED_MODE_ENABLED){
+        // NEW addSubView APPROACH (non-modal method)
+        
+        [iabvc viewWillAppear:NO];
+        [vc.self.view addSubview:iabvc.view];
+        
+        if(!HAS_ANIMATED){
+            [UIView beginAnimations:nil context:nil];
+            [UIView setAnimationDuration:0.30];
+            [UIView setAnimationCurve:UIViewAnimationCurveEaseIn];
+            
+            iabvc.view.frame = vcBounds;
+            [UIView commitAnimations];
+            HAS_ANIMATED = YES;
+        }else{
+            iabvc.view.frame = vcBounds;
+        }
+        
+        // refresh fullscreen button on rotate/view change
+        [iabvc initOrRefreshFullscreenButton];
+        
+    }else{
+        // OLD presentModalViewController APPROACH
+        [self.viewController presentModalViewController:self.inAppBrowserViewController animated:YES];
+    }
+    
+    // DEBUG to check subviews
+    // [self listSubviewsOfView:iabvc.view];
+    
+}
+
 
 - (void)openInInAppBrowser:(NSURL*)url withOptions:(NSString*)options
 {
@@ -136,25 +291,26 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
         }
     }
     
-    /* cemerson */ // set pointer to this viewcontroller for later use
-    /* cemerson */iabvc = self.inAppBrowserViewController;
+    // set pointer to this viewcontroller for later use
+    iabvc = self.inAppBrowserViewController;
     
     CDVInAppBrowserOptions* browserOptions = [CDVInAppBrowserOptions parseOptions:options];
     [self.inAppBrowserViewController showLocationBar:browserOptions.location];
     [self.inAppBrowserViewController showToolBar:browserOptions.toolbar];
     
-    /* cemerson */ // abstract this out into a standalone method?
-    NSString *stringColor = browserOptions.buttoncolorbg;
-    NSUInteger red, green, blue;
-    sscanf([stringColor UTF8String], "#%02X%02X%02X", &red, &green, &blue);
-    UIColor *buttonbg = [UIColor colorWithRed:red/255.0 green:green/255.0 blue:blue/255.0 alpha:1];
+    // process the browserOptions data
+    browserOptions.vh -= browserOptions.vy;
+    FULLSCREEN_WHEN_ROTATED = browserOptions.fullscreenwhenrotated;
+    FULLSCREEN_BUTTON_ENABLED = browserOptions.fullscreenbuttonenabled;
+    VIEW_WIDTH = browserOptions.vw;
+    VIEW_HEIGHT = browserOptions.vh;
+    VIEW_XPOS = browserOptions.vx;
+    VIEW_YPOS = browserOptions.vy;
     
-    /* cemerson */ // for now calling setCloseButtonTitle() either way to make sure button gets colored
-    if (browserOptions.closebuttoncaption != nil) {
-        [self.inAppBrowserViewController setCloseButtonTitle:browserOptions.closebuttoncaption buttonBGColor:buttonbg];
-    }else{
-        [self.inAppBrowserViewController setCloseButtonTitle:@"Done" buttonBGColor:buttonbg];
-    }
+    // configure CLOSE and FULLSCREEN buttons
+    [self.inAppBrowserViewController configureCloseButton:browserOptions.closebuttoncaption buttonBGColor:browserOptions.buttoncolorbg];
+    
+    if((WINDOWED_MODE_ENABLED) && (FULLSCREEN_BUTTON_ENABLED)) [self.inAppBrowserViewController initOrRefreshFullscreenButton];
     
     // Set Presentation Style
     UIModalPresentationStyle presentationStyle = UIModalPresentationFullScreen; // default
@@ -191,65 +347,11 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     if (! browserOptions.hidden) {
         if (self.viewController.modalViewController != self.inAppBrowserViewController) {
             
-            if(WINDOWED_MODE_SPECIFIED){
-                //NSLog(@"PLUGIN: InAppBrowser: addSubView Mode");
-                
-                /*cemerson*/ // NEW addSubView APPROACH
-                /*cemerson*/ vc = (CDVInAppBrowserViewController*)[ super viewController ];
-                CGRect vcBoundsInit = CGRectMake(browserOptions.vx,
-                                                 browserOptions.vh,
-                                                 browserOptions.vw,
-                                                 browserOptions.vh);
-                
-                /*cemerson*/ CGRect webViewBounds = CGRectMake(0,0, browserOptions.vw, browserOptions.vh);
-
-                /*cemerson*/ CGRect vcBounds = CGRectMake(browserOptions.vx,
-                                                          browserOptions.vy,
-                                                          browserOptions.vw,
-                                                          browserOptions.vh);
-                
-                /*cemerson*/ // if formsheet mode we dont mess with the frame
-                /*cemerson*/ iabvc.view.frame = vcBoundsInit;
-                /*cemerson*/ iabvc.webView.frame = webViewBounds;
-                
-                /*cemerson*/ [iabvc.view setAutoresizesSubviews:YES];
-                /*cemerson*/ [iabvc.webView setAutoresizingMask:UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth];
-                
-                /*cemerson*/ iabvc.webView.scalesPageToFit = YES;
-                
-                /*cemerson*/ [iabvc viewWillAppear:NO];
-                
-                /*cemerson*/ [vc.self.view addSubview:iabvc.view];
-                
-                /*cemerson*/ // view animation
-                [UIView beginAnimations:nil context:nil];
-                [UIView setAnimationDuration:0.30];
-                [UIView setAnimationCurve:UIViewAnimationCurveEaseIn];
-                
-                /*cemerson*/ iabvc.view.frame = vcBounds;
-                /*cemerson*/ [UIView commitAnimations];
-            }else{
-                /*cemerson*/ // OLD presentModalViewController APPROACH
-                //NSLog(@"PLUGIN: InAppBrowser: presentModalViewController Mode");
-                [self.viewController presentModalViewController:self.inAppBrowserViewController animated:YES];
-            }
-            
+            [self initOrRefreshViewSizeAndBounds];
             
         }
     }
     [self.inAppBrowserViewController navigateTo:url];
-}
-
-//- (BOOL)webView:(UIWebView*)theWebView should
-- (UIColor*)getUIColorFromHTMLHexColorString: (NSString*)htmlColorString{
-    NSString *stringColor = htmlColorString;
-    NSUInteger red, green, blue;
-    sscanf([stringColor UTF8String], "#%02X%02X%02X", &red, &green, &blue);
-    
-    UIColor *buttonbg = [UIColor colorWithRed:red/255.0 green:green/255.0 blue:blue/255.0 alpha:1];
-    
-    return buttonbg;
-    
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command
@@ -419,7 +521,7 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
 {
     if (self.callbackId != nil) {
         
-        /* cemerson */ // if you CLOSE the web view before it finishes loading sometimes it throws and error
+        // if you CLOSE the web view before it finishes loading sometimes it throws and error
         if(self.inAppBrowserViewController.currentURL.absoluteString == nil){
             NSLog(@" webViewDidFinishLoad() WARNING: *absoluteString is nil! Did you close the web view before it finished loading?");
             return;
@@ -448,8 +550,31 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     }
 }
 
+
+
+- (void)listSubviewsOfView:(UIView *)view {
+    
+    // Get the subviews of the view
+    NSArray *subviews = [view subviews];
+    float viewCount = 0;
+    
+    // Return if there are no subviews
+    if ([subviews count] == 0) return;
+    
+    for (UIView *subview in subviews) {
+        
+        viewCount ++;
+        
+        NSLog(@"SubView [#%f] {%@}", viewCount, [[subview class]description]);
+        
+        // List the subviews of subview
+        [self listSubviewsOfView:subview];
+    }
+}
+
 - (void)browserExit
 {
+    /*DEBUG*/ //NSLog(@"--> CDVInAppBrowser.browserExit()...");
     if (self.callbackId != nil) {
         
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
@@ -457,13 +582,11 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
         [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
         
         [self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
-        
-        // NSLog(@"PLUGIN: InAppBrowser.browserExit(pluginResult: %@)... [CDVInAppBrowser.m]", pluginResult);
-        
     }
     // Don't recycle the ViewController since it may be consuming a lot of memory.
     // Also - this is required for the PDF/User-Agent bug work-around.
     self.inAppBrowserViewController = nil;
+    
 }
 
 @end
@@ -482,21 +605,35 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
         _userAgent = userAgent;
         _prevUserAgent = prevUserAgent;
         _webViewDelegate = [[CDVWebViewDelegate alloc] initWithDelegate:self];
+        
         [self createViews];
     }
     
     return self;
 }
 
+- (void)toggleFullScreen{
+    /*DEBUG*/ //NSLog(@"toggleFullScreen().. vc.view.frame.size.width[%f]", vc.view.frame.size.width);
+    
+    if(IN_FULLSCREEN_MODE == YES){
+        IN_FULLSCREEN_MODE = NO;
+    }else{
+        IN_FULLSCREEN_MODE = YES;
+    }
+    [iabvc initOrRefreshFullscreenButton];
+    
+    // OLD close actions
+    if ([iab respondsToSelector:@selector(initOrRefreshViewSizeAndBounds)]) {
+        [iab initOrRefreshViewSizeAndBounds];
+    }
+    
+}
+
+
+
 - (void)createViews
 {
     // We create the views in code for primarily for ease of upgrades and not requiring an external .xib to be included
-    
-    /*cemerson*/ // inherit frame of parent view
-//    CGRect webViewBounds = CGRectMake(0,
-//                                      0,
-//                                      self.view.frame.size.width,
-//                                      self.view.frame.size.height);
     
     CGRect webViewBounds = self.view.bounds;
     
@@ -518,9 +655,8 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     self.webView.contentMode = UIViewContentModeScaleToFill;
     self.webView.contentStretch = CGRectFromString(@"{{0, 0}, {1, 1}}");
     self.webView.multipleTouchEnabled = YES;
-    /* cemerson */ // set webView to transparent so the transition animation is actually covering up the app
-    /* cemerson */ self.webView.opaque = NO;
-    self.webView.scalesPageToFit = NO;
+    // set webView to transparent so the transition animation is actually covering up the app
+    self.webView.opaque = NO;
     self.webView.userInteractionEnabled = YES;
     
     self.spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
@@ -539,6 +675,7 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     self.spinner.userInteractionEnabled = NO;
     [self.spinner stopAnimating];
     
+    // closeButton
     self.closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(close)];
     self.closeButton.enabled = YES;
     
@@ -546,6 +683,11 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     
     UIBarButtonItem* fixedSpaceButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
     fixedSpaceButton.width = 20;
+    
+    // fullScreenButton
+    self.fullScreenButton = [[UIBarButtonItem alloc] init];
+    self.fullScreenButton.enabled = YES;
+    
     
     self.toolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0.0, (self.view.bounds.size.height - TOOLBAR_HEIGHT), self.view.bounds.size.width, TOOLBAR_HEIGHT)];
     self.toolbar.alpha = 1.000;
@@ -596,30 +738,81 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     self.backButton.enabled = YES;
     self.backButton.imageInsets = UIEdgeInsetsZero;
     
-    [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
+    if((!WINDOWED_MODE_ENABLED) || (!FULLSCREEN_BUTTON_ENABLED)){
+        [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
+    }else{
+        [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton, self.fullScreenButton]];
+    }
     
-    /* cemerson */ self.view.backgroundColor = [UIColor grayColor];
-    /* cemerson */ self.view.opaque = YES;
+    
+    self.view.backgroundColor = [UIColor grayColor];
+    self.view.opaque = YES;
     
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
+    
 }
 
-/* cemerson */ // added buttonBGColor parameter
-- (void)setCloseButtonTitle:(NSString*)title buttonBGColor:(UIColor*)buttonBGColor
+// added buttonBGColor parameter
+- (void)configureCloseButton:(NSString*)title buttonBGColor:(NSString*) buttonBGColor
 {
-    //NSLog(@"setCloseButtonTitle() color:%@", buttonBGColor);
     // the advantage of using UIBarButtonSystemItemDone is the system will localize it for you automatically
     // but, if you want to set this yourself, knock yourself out (we can't set the title for a system Done button, so we have to create a new one)
     self.closeButton = nil;
-    self.closeButton = [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)];
+    if(title != nil){
+        self.closeButton = [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)];
+    }else{
+        self.closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(close)];
+    }
+    
     self.closeButton.enabled = YES;
     
-    self.closeButton.tintColor = buttonBGColor;
+    // button coloring | abstract this out into a standalone method?
+    NSString *stringColor = buttonBGColor;
+    NSUInteger red, green, blue;
+    sscanf([stringColor UTF8String], "#%02X%02X%02X", &red, &green, &blue);
+    UIColor *buttonbg = [UIColor colorWithRed:red/255.0 green:green/255.0 blue:blue/255.0 alpha:1];
+    [self.closeButton setTintColor:buttonbg];
     
     NSMutableArray* items = [self.toolbar.items mutableCopy];
     [items replaceObjectAtIndex:0 withObject:self.closeButton];
+    [self.toolbar setItems:items];
+}
+
+
+- (void)initOrRefreshFullscreenButton
+{
+    UIButton *fsButton = [[UIButton alloc] init];
+    [fsButton addTarget:self action:@selector(toggleFullScreen)
+       forControlEvents:UIControlEventTouchUpInside];
+    CGRect fsButtonFrame = CGRectMake(0, 0, 45, 45);
+    
+    UIImage *fullscreenButtonImg;
+    
+    if(!IN_FULLSCREEN_MODE){
+        fullscreenButtonImg = [UIImage imageNamed:@"CDVInAppBrowser_fs.png"];
+    }else{
+        fullscreenButtonImg = [UIImage imageNamed:@"CDVInAppBrowser_fs_exit.png"];
+    }
+    
+    if((IN_ROTATED_MODE) && (FULLSCREEN_WHEN_ROTATED)){
+        fsButtonFrame = CGRectMake(0,0,0,0);
+    }
+    
+    [fsButton setImage:fullscreenButtonImg forState:UIControlStateNormal];
+    
+    [fsButton setFrame:fsButtonFrame];
+    
+    self.fullScreenButton = [[UIBarButtonItem alloc]
+                             initWithCustomView:fsButton];
+    
+    self.fullScreenButton.enabled = YES;
+    
+    [self.fullScreenButton setTintColor:[UIColor clearColor]];
+    
+    NSMutableArray* items = [self.toolbar.items mutableCopy];
+    [items replaceObjectAtIndex:items.count-1 withObject:self.fullScreenButton];
     [self.toolbar setItems:items];
 }
 
@@ -738,25 +931,71 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     }
 }
 
+//********** ORIENTATION CHANGED **********
+- (void)orientationChanged:(NSNotification *)note
+{
+	// if this has been overridden then ignore all rotation events
+    if((!FULLSCREEN_WHEN_ROTATED) || (!WINDOWED_MODE_ENABLED)) return;
+    
+    if(IN_ROTATED_MODE == NO){
+        IN_ROTATED_MODE = YES;
+        /*DEBUG*/ //NSLog(@"orientationChanged: changed rotation ...");
+    }else{
+        IN_ROTATED_MODE = NO;
+        /*DEBUG*/ //NSLog(@"orientationChanged: changed to default rotation ...");
+    }
+    
+    if ([iab respondsToSelector:@selector(initOrRefreshViewSizeAndBounds)]){
+        [iab initOrRefreshViewSizeAndBounds];
+    }
+}
+
 - (void)viewDidLoad
 {
+    
+    /*DEBUG*/ //NSLog(@"--> CDVInAppBrowserViewController.viewDidLoad()");
+    IN_ROTATED_MODE = NO;
+    IN_FULLSCREEN_MODE = NO;
+    HAS_ANIMATED = NO;
+    
     [super viewDidLoad];
+    
+    // detect rotation for resizing logic
+    if (self != nil) {
+        UIDevice *device = [UIDevice currentDevice];					//Get the device object
+        [device beginGeneratingDeviceOrientationNotifications];			//Tell it to start monitoring the accelerometer for orientation
+        NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];	//Get the notification centre for the app
+        [nc addObserver:self                                               //Add yourself as an observer
+               selector:@selector(orientationChanged:)
+                   name:UIDeviceOrientationDidChangeNotification
+                 object:device];
+        
+    }
 }
 
 - (void)viewDidUnload
 {
+    /*DEBUG*/ //NSLog(@"............... CDVInAppBrowserViewController.viewDidUnload()");
     [self.webView loadHTMLString:nil baseURL:nil];
     [CDVUserAgentUtil releaseLock:&_userAgentLockToken];
+    
+    UIDevice *device = [UIDevice currentDevice];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceOrientationDidChangeNotification object:device];
+    
     [super viewDidUnload];
 }
 
+
+
+
+
 - (void)close
 {
+    NSLog(@"--> CDVInAppBrowserViewController.close()...");
+    
     [CDVUserAgentUtil releaseLock:&_userAgentLockToken];
     
-    /* cemerson */ // TODO: prevent throwing error when closing before web page finished loading (??)
-    
-    /* cemerson */ // OLD close actions
+    // OLD close actions
     if ([self respondsToSelector:@selector(presentingViewController)]) {
         [[self presentingViewController] dismissViewControllerAnimated:YES completion:nil];
     } else {
@@ -768,14 +1007,6 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
     if ((self.navigationDelegate != nil) && [self.navigationDelegate respondsToSelector:@selector(browserExit)]) {
         [self.navigationDelegate browserExit];
     }
-    
-    /* cemerson */ // if windowsModeSpecified we assume addSubView was used
-    if(WINDOWED_MODE_SPECIFIED){
-        [iabvc.view removeFromSuperview];
-    }
-    
-    NSLog(@"PLUGIN: InAppBrowser.close()... [CDVInAppBrowser.m]");
-    
     
 }
 
@@ -918,12 +1149,14 @@ BOOL WINDOWED_MODE_SPECIFIED = NO;
         self.suppressesincrementalrendering = NO;
         self.hidden = NO;
         
-        /* cemerson */ self.closebuttoncaption = CLOSE_BUTTON_LABEL;
-        /* cemerson */ self.vw = iabvc.view.frame.size.width;
-        /* cemerson */ self.vh = iabvc.view.frame.size.height; // - (FOOTER_HEIGHT);
-        /* cemerson */ self.vx = iabvc.view.frame.origin.x;
-        /* cemerson */ self.vy = 0;
-        /* cemerson */ self.buttoncolorbg = BUTTON_BACKGROUND_COLOR;
+        self.closebuttoncaption = CLOSE_BUTTON_LABEL;
+        self.fullscreenwhenrotated = YES;
+        self.fullscreenbuttonenabled = YES;
+        self.vw = [iab currentScreenBoundsDependOnOrientation].size.width;
+        self.vh = [iab currentScreenBoundsDependOnOrientation].size.height;
+        self.vx = iabvc.view.frame.origin.x;
+        self.vy = 0;
+        self.buttoncolorbg = BUTTON_BACKGROUND_COLOR;
     }
     
     return self;

@@ -35,6 +35,9 @@
 - (void)close:(CDVInvokedUrlCommand*)command;
 - (void)injectScriptCode:(CDVInvokedUrlCommand*)command;
 - (void)show:(CDVInvokedUrlCommand*)command;
+- (void)orientationChanged:(NSNotification *)note;
+- (void)initOrRefreshViewSizeAndBounds;
+- (void)toggleFullScreen:(CDVInvokedUrlCommand*)command;
 
 @end
 
@@ -48,6 +51,7 @@
 
 @property (nonatomic, strong) IBOutlet UIWebView* webView;
 @property (nonatomic, strong) IBOutlet UIBarButtonItem* closeButton;
+@property (nonatomic, strong) IBOutlet UIBarButtonItem* fullScreenButton;
 @property (nonatomic, strong) IBOutlet UILabel* addressLabel;
 @property (nonatomic, strong) IBOutlet UIBarButtonItem* backButton;
 @property (nonatomic, strong) IBOutlet UIBarButtonItem* forwardButton;
@@ -63,10 +67,10 @@
 - (void)showLocationBar:(BOOL)show;
 - (void)showToolBar:(BOOL)show;
 
-/* cemerson */ // added buttonBGColor parameter
-- (void)setCloseButtonTitle:(NSString*)title buttonBGColor:(UIColor*)buttonBGColor;
-
+- (void)configureCloseButton:(NSString*)title buttonBGColor:(NSString*)buttonBGColor; // setCloseButtonTitle()
+- (void)initOrRefreshFullscreenButton;
 - (id)initWithUserAgent:(NSString*)userAgent prevUserAgent:(NSString*)prevUserAgent;
+
 
 @end
 
@@ -75,10 +79,8 @@
 @property (nonatomic, assign) BOOL location;
 @property (nonatomic, assign) BOOL toolbar;
 @property (nonatomic, copy) NSString* closebuttoncaption;
-
 @property (nonatomic, copy) NSString* presentationstyle;
 @property (nonatomic, copy) NSString* transitionstyle;
-
 @property (nonatomic, assign) BOOL enableviewportscale;
 @property (nonatomic, assign) BOOL mediaplaybackrequiresuseraction;
 @property (nonatomic, assign) BOOL allowinlinemediaplayback;
@@ -86,12 +88,13 @@
 @property (nonatomic, assign) BOOL suppressesincrementalrendering;
 @property (nonatomic, assign) BOOL hidden;
 
-/* cemerson */ @property (nonatomic, assign) CGFloat vw;
-/* cemerson */ @property (nonatomic, assign) CGFloat vh;
-/* cemerson */ @property (nonatomic, assign) CGFloat vx;
-/* cemerson */ @property (nonatomic, assign) CGFloat vy;
-/* cemerson */ @property (nonatomic, assign) NSString* buttoncolorbg;
-
+@property (nonatomic, assign) CGFloat vw;
+@property (nonatomic, assign) CGFloat vh;
+@property (nonatomic, assign) CGFloat vx;
+@property (nonatomic, assign) CGFloat vy;
+@property (nonatomic, assign) NSString* buttoncolorbg;
+@property (nonatomic, assign) BOOL fullscreenwhenrotated;
+@property (nonatomic, assign) BOOL fullscreenbuttonenabled;
 
 + (CDVInAppBrowserOptions*)parseOptions:(NSString*)options;
 

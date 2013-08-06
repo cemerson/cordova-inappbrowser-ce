@@ -586,6 +586,8 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
     // Don't recycle the ViewController since it may be consuming a lot of memory.
     // Also - this is required for the PDF/User-Agent bug work-around.
     self.inAppBrowserViewController = nil;
+
+    [iab close:nil];
     
 }
 

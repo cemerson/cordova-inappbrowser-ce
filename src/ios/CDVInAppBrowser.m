@@ -801,8 +801,12 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
         fullscreenButtonImg = [UIImage imageNamed:@"CDVInAppBrowser_fs_exit.png"];
     }
     
-    if((IN_ROTATED_MODE) && (FULLSCREEN_WHEN_ROTATED)){
+    if(
+       (!FULLSCREEN_BUTTON_ENABLED) ||
+       ((IN_ROTATED_MODE) && (FULLSCREEN_WHEN_ROTATED))
+       ){
         fsButtonFrame = CGRectMake(0,0,0,0);
+        return;
     }
     
     [fsButton setImage:fullscreenButtonImg forState:UIControlStateNormal];

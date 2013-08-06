@@ -587,7 +587,7 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
     // Also - this is required for the PDF/User-Agent bug work-around.
     self.inAppBrowserViewController = nil;
 
-    [iab close:nil];
+    [iab close:nil]; 
     
 }
 

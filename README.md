@@ -23,7 +23,7 @@ The primary custom parameters I've added to this plugin are:
 - **fullscreenbuttonenabled** (adds a full screen toggle button on far right of toolbar, defaults to: yes);;
 
 ###Usage Examples:
-####PDF in Split-View Layout:
+####PDF in Split-View (Pseudo) Layout:
     window.open('document.pdf','_blank','vw=800,vh=768,vx=224,vy=0,buttoncolorbg=#BA8C3C');
 
 ####Web Page in Window:

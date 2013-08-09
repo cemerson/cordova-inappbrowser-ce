@@ -10,7 +10,7 @@ To install this plugin, follow the [Command-line Interface Guide](http://cordova
 cordova plugins add https://github.com/cemerson/cordova-inappbrowser-ce.git
 
 ###Remove Plugin
-cordova plugins rm org.apache.cordova.plugins.inappbrowserce
+cordova plugins rm org.apache.cordova.core.inappbrowser
 
 ###Parameter Notes
 The primary custom parameters I've added to this plugin are:

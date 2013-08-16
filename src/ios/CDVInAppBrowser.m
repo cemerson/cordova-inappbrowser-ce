@@ -115,6 +115,11 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
             NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
             NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
             
+            if([options rangeOfString:@"fullscreenbuttonenabled=no"].location == NSNotFound){
+                FULLSCREEN_BUTTON_ENABLED = YES;
+            }else{
+                FULLSCREEN_BUTTON_ENABLED = NO;
+            }
             
             // Determine [WINDOWED_MODE_ENABLED] value
             if (
@@ -209,9 +214,6 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
             h = deviceH;
             x = 0;
             y = 0;
-            
-            if (![UIApplication sharedApplication].statusBarHidden) h -= 20;
-            
         }else{
             /*DEBUG*/ //NSLog(@" ...... default view mode");
             w = VIEW_WIDTH;
@@ -305,6 +307,7 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
     browserOptions.vh -= browserOptions.vy;
     FULLSCREEN_WHEN_ROTATED = browserOptions.fullscreenwhenrotated;
     FULLSCREEN_BUTTON_ENABLED = browserOptions.fullscreenbuttonenabled;
+    
     VIEW_WIDTH = browserOptions.vw;
     VIEW_HEIGHT = browserOptions.vh;
     VIEW_XPOS = browserOptions.vx;
@@ -590,8 +593,6 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
     // Also - this is required for the PDF/User-Agent bug work-around.
     self.inAppBrowserViewController = nil;
     
-    [iab close:nil];
-    
 }
 
 @end
@@ -788,6 +789,8 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
 
 - (void)initOrRefreshFullscreenButton
 {
+    if(!FULLSCREEN_BUTTON_ENABLED) return;
+    
     UIButton *fsButton = [[UIButton alloc] init];
     [fsButton addTarget:self action:@selector(toggleFullScreen)
        forControlEvents:UIControlEventTouchUpInside];
@@ -801,12 +804,8 @@ NSString *CLOSE_BUTTON_LABEL = @"Done";
         fullscreenButtonImg = [UIImage imageNamed:@"CDVInAppBrowser_fs_exit.png"];
     }
     
-    if(
-       (!FULLSCREEN_BUTTON_ENABLED) ||
-       ((IN_ROTATED_MODE) && (FULLSCREEN_WHEN_ROTATED))
-       ){
+    if((IN_ROTATED_MODE) && (FULLSCREEN_WHEN_ROTATED)){
         fsButtonFrame = CGRectMake(0,0,0,0);
-        return;
     }
     
     [fsButton setImage:fullscreenButtonImg forState:UIControlStateNormal];

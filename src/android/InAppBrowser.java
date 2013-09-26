@@ -87,7 +87,7 @@ public class InAppBrowser extends CordovaPlugin {
     private boolean showLocationBar = true;
     private boolean openWindowHidden = false;
     private String buttonLabel = "Done";
-    
+
     /**
      * Executes the request and returns PluginResult.
      *
@@ -106,7 +106,7 @@ public class InAppBrowser extends CordovaPlugin {
                     target = SELF;
                 }
                 HashMap<String, Boolean> features = parseFeature(args.optString(2));
-                
+
                 Log.d(LOG_TAG, "target = " + target);
 
                 url = updateUrl(url);
@@ -116,7 +116,7 @@ public class InAppBrowser extends CordovaPlugin {
                 if (SELF.equals(target)) {
                     Log.d(LOG_TAG, "in self");
                     // load in webview
-                    if (url.startsWith("file://") || url.startsWith("javascript:") 
+                    if (url.startsWith("file://") || url.startsWith("javascript:")
                             || Config.isUrlWhiteListed(url)) {
                         this.webView.loadUrl(url);
                     }
@@ -241,7 +241,7 @@ public class InAppBrowser extends CordovaPlugin {
 
     /**
      * Put the list of features into a hash map
-     * 
+     *
      * @param optString
      * @return
      */
@@ -270,9 +270,9 @@ public class InAppBrowser extends CordovaPlugin {
 
     /**
      * Convert relative URL to full path
-     * 
+     *
      * @param url
-     * @return 
+     * @return
      */
     private String updateUrl(String url) {
         Uri newUrl = Uri.parse(url);
@@ -315,7 +315,7 @@ public class InAppBrowser extends CordovaPlugin {
         } catch (JSONException ex) {
             Log.d(LOG_TAG, "Should never happen");
         }
-        
+
         if (dialog != null) {
             dialog.dismiss();
         }
@@ -386,7 +386,7 @@ public class InAppBrowser extends CordovaPlugin {
                 openWindowHidden = hidden.booleanValue();
             }
         }
-        
+
         final CordovaWebView thatWebView = this.webView;
 
         // Create dialog in new thread
@@ -529,7 +529,7 @@ public class InAppBrowser extends CordovaPlugin {
                     settings.setDatabaseEnabled(true);
                 }
                 settings.setDomStorageEnabled(true);
-               
+
                 inAppWebView.loadUrl(url);
                 inAppWebView.setId(6);
                 inAppWebView.getSettings().setLoadWithOverviewMode(true);
@@ -541,16 +541,33 @@ public class InAppBrowser extends CordovaPlugin {
                 actionButtonContainer.addView(back);
                 actionButtonContainer.addView(forward);
 
+                // ================================================
+                // CHANGING per:
+                // http://stackoverflow.com/a/16596554/826308
+
+                // *** ORIG CODE ***
+                // // Add the views to our toolbar
+                // toolbar.addView(actionButtonContainer);
+                // toolbar.addView(edittext);
+                // toolbar.addView(close);
+
+                // // Don't add the toolbar if its been disabled
+                // if (getShowLocationBar()) {
+                //     // Add our toolbar to our main view/layout
+                //     main.addView(toolbar);
+                // }
+
+                // *** CHANGED CODE ***
                 // Add the views to our toolbar
                 toolbar.addView(actionButtonContainer);
-                toolbar.addView(edittext);
+                if (getShowLocationBar()) {
+                    toolbar.addView(edittext);
+                }
                 toolbar.addView(close);
 
-                // Don't add the toolbar if its been disabled
-                if (getShowLocationBar()) {
-                    // Add our toolbar to our main view/layout
-                    main.addView(toolbar);
-                }
+                // Add our toolbar to our main view/layout
+                main.addView(toolbar);
+                // ================================================
 
                 // Add our webview to our main view/layout
                 main.addView(inAppWebView);
@@ -566,7 +583,7 @@ public class InAppBrowser extends CordovaPlugin {
                 // the goal of openhidden is to load the url and not display it
                 // Show() needs to be called to cause the URL to be loaded
                 if(openWindowHidden) {
-                	dialog.hide();
+                    dialog.hide();
                 }
             }
         };
@@ -696,7 +713,7 @@ public class InAppBrowser extends CordovaPlugin {
         }
 
     }
-    
+
     /**
      * The webview client receives notifications about appView
      */
@@ -727,7 +744,7 @@ public class InAppBrowser extends CordovaPlugin {
             String newloc = "";
             if (url.startsWith("http:") || url.startsWith("https:") || url.startsWith("file:")) {
                 newloc = url;
-            } 
+            }
             // If dialing phone (tel:5551212)
             else if (url.startsWith(WebView.SCHEME_TEL)) {
                 try {
@@ -791,42 +808,42 @@ public class InAppBrowser extends CordovaPlugin {
                 JSONObject obj = new JSONObject();
                 obj.put("type", LOAD_START_EVENT);
                 obj.put("url", newloc);
-    
+
                 sendUpdate(obj, true);
             } catch (JSONException ex) {
                 Log.d(LOG_TAG, "Should never happen");
             }
         }
-        
+
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
-            
+
             try {
                 JSONObject obj = new JSONObject();
                 obj.put("type", LOAD_STOP_EVENT);
                 obj.put("url", url);
-    
+
                 sendUpdate(obj, true);
             } catch (JSONException ex) {
                 Log.d(LOG_TAG, "Should never happen");
             }
         }
-        
+
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
             super.onReceivedError(view, errorCode, description, failingUrl);
-            
+
             try {
                 JSONObject obj = new JSONObject();
                 obj.put("type", LOAD_ERROR_EVENT);
                 obj.put("url", failingUrl);
                 obj.put("code", errorCode);
                 obj.put("message", description);
-    
+
                 sendUpdate(obj, true, PluginResult.Status.ERROR);
             } catch (JSONException ex) {
                 Log.d(LOG_TAG, "Should never happen");
             }
-        	
+
         }
     }
 }

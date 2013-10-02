@@ -16,14 +16,17 @@ cordova plugins rm org.apache.cordova.plugins.inappbrowser
 
 ###Parameter Notes
 The primary custom parameters I've added to this plugin are:
-- **vw** (view width)
-- **vh** (view height)
-- **vx** (view x position (offset))
-- **vy** (view y position (offset))
-- **buttoncolorbg** (close button background color);
-- **fullscreenwhenrotated** (resizes web view to fit entire screen on rotate, defaults to: yes);
-- **fullscreenbuttonenabled** (adds a full screen toggle button on far right of toolbar, defaults to: yes);;
-- **arrowbuttonsenabled=no** (prevents next/back buttons - I use this for PDFs...)
+- Just iOS (for now)
+    - **vw** (view width)
+    - **vh** (view height)
+    - **vx** (view x position (offset))
+    - **vy** (view y position (offset))
+    - **buttoncolorbg** (close button background color);
+    - **fullscreenwhenrotated** (resizes web view to fit entire screen on rotate, defaults to: yes);
+    - **fullscreenbuttonenabled** (adds a full screen toggle button on far right of toolbar, defaults to: yes);
+
+- iOS / Android:
+    - **arrowbuttonsenabled=no** (prevents next/back buttons - I use this for PDFs...)
 
 ###Usage Examples:
 ####PDF in Split-View (Pseudo) Layout:

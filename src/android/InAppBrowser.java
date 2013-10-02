@@ -87,6 +87,7 @@ public class InAppBrowser extends CordovaPlugin {
     private boolean showLocationBar = true;
     private boolean openWindowHidden = false;
     private String buttonLabel = "Done";
+    /*cemerson*/ private boolean arrowButtonsAllowed;
 
     /**
      * Executes the request and returns PluginResult.
@@ -101,6 +102,13 @@ public class InAppBrowser extends CordovaPlugin {
             if (action.equals("open")) {
                 this.callbackContext = callbackContext;
                 String url = args.getString(0);
+
+                /*cemerson: arrowbuttons=[false]*/
+                String featuresList = args.optString(2);
+                int arrowButtonsDisabledIndex = featuresList.indexOf("arrowbuttonsenabled=no");
+                arrowButtonsAllowed = true;
+                if(arrowButtonsDisabledIndex > -1) arrowButtonsAllowed = false;
+
                 String target = args.optString(1);
                 if (target == null || target.equals("") || target.equals(NULL)) {
                     target = SELF;
@@ -538,8 +546,10 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView.requestFocusFromTouch();
 
                 // Add the back and forward buttons to our action button container layout
-                actionButtonContainer.addView(back);
-                actionButtonContainer.addView(forward);
+                /*cemerson*/ if(arrowButtonsAllowed){
+                    actionButtonContainer.addView(back);
+                    actionButtonContainer.addView(forward);
+                }
 
                 // ================================================
                 // CHANGING per:

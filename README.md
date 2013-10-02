@@ -3,7 +3,7 @@ cordova-plugin-inappbrowser
 To install this plugin, follow the [Command-line Interface Guide](http://cordova.apache.org/docs/en/edge/guide_cli_index.md.html#The%20Command-line%20Interface).
 
 ###Notes:
-- Main reason I updated this plugin is to maintain the ability to specify Width/Height and Xposition/YPosition of my web views. I had it working in the Cordova 2.x world - but this updated version blew that all up so I had to go in and hack things up to get it working again. I am not an ace ObjC programmer by any stretch - so please share whatever adjustments, clean-up or polish suggestions if anyone has any! 
+- Main reason I updated this plugin is to maintain the ability to specify Width/Height and Xposition/YPosition of my web views. I had it working in the Cordova 2.x world - but this updated version blew that all up so I had to go in and hack things up to get it working again. I am not an ace ObjC programmer by any stretch - so please share whatever adjustments, clean-up or polish suggestions if anyone has any!
 ([Reference @StackExchange link here...](http://stackoverflow.com/questions/17886218/how-to-set-transparent-background-with-inappbrowser/18228718#18228718]))
 
 - For some reason CoreGraphics framework isn't being auto added to project (even thought its specified in the plugin.xml so it has to be manually added when using this plugin otherwise you'll get a build error.
@@ -23,6 +23,7 @@ The primary custom parameters I've added to this plugin are:
 - **buttoncolorbg** (close button background color);
 - **fullscreenwhenrotated** (resizes web view to fit entire screen on rotate, defaults to: yes);
 - **fullscreenbuttonenabled** (adds a full screen toggle button on far right of toolbar, defaults to: yes);;
+- **arrowbuttonsenabled=no** (prevents next/back buttons - I use this for PDFs...)
 
 ###Usage Examples:
 ####PDF in Split-View (Pseudo) Layout:
